@@ -1,13 +1,17 @@
 use std::sync::Arc;
+use wgpu::PolygonMode::Point;
 use wgpu::util::DeviceExt;
 use winit::event::WindowEvent;
 use winit::window::Window;
 use crate::texture;
 use crate::objects;
 use crate::vertex;
+use crate::camera;
 
 use vertex::Vertex;
 use objects::{VERTICES, INDICES};
+use crate::camera::Camera;
+use crate::math::{Point3, Vector3};
 
 pub enum Pipeline {
     Brown,
@@ -27,6 +31,7 @@ pub struct State<'a> {
     pub diffuse_bind_group: wgpu::BindGroup,
     pub diffuse_texture: texture::Texture,
     pub window: Arc<Window>,
+    pub camera: Camera,
 }
 impl<'a> State<'a> {
     pub async fn new(window: Arc<Window>) -> State<'a> {
@@ -126,6 +131,8 @@ impl<'a> State<'a> {
             ],
             label: Some("diffuse_bind_group"),
         });
+
+        let camera = Camera {eye: Point3::new(0.0, 1.0, 2.0), target: Point3::new(0.0, 0.0, 0.0), up: Vector3::new(0.0, 1.0, 0.0), aspect: config.width as f32 / config.height as f32, fovy: 45.0, znear: 0.1, zfar: 100.0};
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
@@ -232,7 +239,7 @@ impl<'a> State<'a> {
 
         let num_indices = INDICES.len() as u32;
 
-        return Self {
+        Self {
             window,
             surface,
             device,
@@ -246,7 +253,8 @@ impl<'a> State<'a> {
             num_indices,
             diffuse_bind_group,
             diffuse_texture,
-        };
+            camera,
+        }
     }
 
     pub fn window(&self) -> &Window {

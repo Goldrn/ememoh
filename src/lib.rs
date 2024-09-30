@@ -5,6 +5,7 @@ mod vertex;
 mod objects;
 mod camera;
 mod math;
+mod constants;
 
 use std::{ops::Not, process::Output, ptr::null, sync::Arc};
 
