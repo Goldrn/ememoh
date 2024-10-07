@@ -7,6 +7,8 @@ mod camera;
 mod math;
 mod constants;
 
+mod cameracontroller;
+
 use std::{ops::Not, process::Output, ptr::null, sync::Arc};
 
 use tokio::runtime::Runtime;

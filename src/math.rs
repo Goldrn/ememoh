@@ -1,5 +1,7 @@
+use std::ops::{Add, Sub};
 use std::arch::x86_64::_mm256_sqrt_ps;
 use std::ops::Mul;
+use crate::vertex::Vertex;
 
 pub struct Point3<S> {
     pub x: S,
@@ -18,6 +20,57 @@ impl Point3<f32> {
 
     pub fn dot_with_vector(&self, vector: Vector3<f32>) -> f32 {
         vector.x * self.x + vector.y * self.y + vector.z * self.z
+    }
+    pub fn cross_with_vector(&self, v: Vector3<f32>) -> Vector3<f32> {
+        Vector3::new((self.y*v.z) - (self.z*v.y), (self.z*v.x) - (self.x*v.z), (self.x*v.y) - (self.y*v.x))
+    }
+    pub fn magnitude(&self) -> f32 {
+        f32::sqrt((self.x*self.x) + (self.y*self.y) + (self.z*self.z))
+    }
+
+    pub fn normalize(&self) -> Point3<f32>{
+        let mag : f32 = f32::sqrt((self.x*self.x) + (self.y*self.y) + (self.z*self.z));
+        Point3::new(self.x/mag, self.y/mag, self.z/mag)
+    }
+}
+
+impl Add<Vector3<f32>> for Point3<f32> {
+    type Output = Point3<f32>;
+
+    fn add(self, rhs: Vector3<f32>) -> Self::Output {
+        Point3::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
+    }
+}
+
+impl Sub for Point3<f32> {
+    type Output = Point3<f32>;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Point3::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
+    }
+}
+
+impl Sub<Vector3<f32>> for Point3<f32> {
+    type Output = Point3<f32>;
+
+    fn sub(self, rhs: Vector3<f32>) -> Self::Output {
+        Point3::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
+    }
+}
+
+impl Mul for Point3<f32> {
+    type Output = Point3<f32>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Point3::new(self.x * rhs.x, self.y * rhs.y, self.z * rhs.z)
+    }
+}
+
+impl Mul<f32> for Point3<f32> {
+    type Output = Point3<f32>;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        Point3::new(self.x * rhs, self.y * rhs, self.z * rhs)
     }
 }
 
@@ -39,6 +92,9 @@ impl Vector3<f32> {
         (self.x*v.x) + (self.y*v.y) + (self.z*v.z)
     }
 
+    pub fn magnitude(&self) -> f32 {
+        f32::sqrt((self.x*self.x) + (self.y*self.y) + (self.z*self.z))
+    }
     pub fn normalize(&self) -> Vector3<f32> {
         let mag : f32 = f32::sqrt((self.x*self.x) + (self.y*self.y) + (self.z*self.z));
         Vector3::new(self.x/mag, self.y/mag, self.z/mag)
@@ -46,6 +102,38 @@ impl Vector3<f32> {
 
     pub fn clone(&self) -> Vector3<f32> {
         Vector3::new(self.x, self.y, self.z)
+    }
+}
+
+impl Mul<f32> for Vector3<f32> {
+    type Output = Vector3<f32>;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        Vector3::new(self.x * rhs, self.y * rhs, self.z * rhs)
+    }
+}
+
+impl Add for Vector3<f32> {
+    type Output = Vector3<f32>;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Vector3::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
+    }
+}
+
+impl Add<Point3<f32>> for Vector3<f32> {
+    type Output = Vector3<f32>;
+
+    fn add(self, rhs: Point3<f32>) -> Self::Output {
+        Vector3::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
+    }
+}
+
+impl Sub<Point3<f32>> for Vector3<f32> {
+    type Output = Vector3<f32>;
+
+    fn sub(self, rhs: Point3<f32>) -> Self::Output {
+        Vector3::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
     }
 }
 pub struct Vector4<S> {
@@ -74,6 +162,18 @@ impl Matrix4<f32> {
 
     pub const fn new(x1: f32, x2: f32, x3: f32, x4: f32, y1: f32, y2: f32, y3: f32, y4: f32, z1: f32, z2: f32, z3: f32, z4: f32, w1: f32, w2: f32, w3: f32, w4: f32,) -> Matrix4<f32> {
         Matrix4{x: Vector4::new(x1, x2, x3, x4), y: Vector4::new(y1, y2, y3, y4), z: Vector4::new(z1, z2, z3, z4), w: Vector4::new(w1, w2, w3, w4)}
+    }
+
+    pub const fn new_from_vectors(x: Vector4<f32>, y: Vector4<f32>, z: Vector4<f32>, w: Vector4<f32>) -> Matrix4<f32>{
+        Matrix4{x, y, z, w}
+    }
+    pub const fn new_identity() -> Matrix4<f32> {
+        let x = Vector4::new(1.0,0.0,0.0,0.0);
+        let y = Vector4::new(0.0,1.0,0.0,0.0);
+        let z = Vector4::new(0.0,0.0,1.0,0.0);
+        let w = Vector4::new(0.0,0.0,0.0,1.0);
+
+        Matrix4::new_from_vectors(x, y, z, w)
     }
     pub fn look_to_rh(eye: Point3<f32>, dir: Vector3<f32>, up: Vector3<f32>) -> Matrix4<f32> {
         let dir_normal = dir.normalize();
@@ -105,6 +205,62 @@ impl Mul for Matrix4<f32> {
         )
     }
 }
+
+impl From<[[f32; 4]; 4]> for Matrix4<f32> {
+    fn from(value: [[f32; 4]; 4]) -> Matrix4<f32> {
+        let mut output = Matrix4::new_identity();
+        output.x.x = value[0][0];
+        output.x.y = value[0][1];
+        output.x.z = value[0][2];
+        output.x.w = value[0][3];
+
+        output.y.x = value[1][0];
+        output.y.y = value[1][1];
+        output.y.z = value[1][2];
+        output.y.w = value[1][3];
+
+        output.z.x = value[2][0];
+        output.z.y = value[2][1];
+        output.z.z = value[2][2];
+        output.z.w = value[2][3];
+
+        output.w.x = value[3][0];
+        output.w.y = value[3][1];
+        output.w.z = value[3][2];
+        output.w.w = value[3][3];
+
+        output
+    }
+}
+
+impl From<Matrix4<f32>> for [[f32; 4]; 4] {
+    fn from(value: Matrix4<f32>) -> [[f32; 4]; 4] {
+        let mut output : [[f32; 4]; 4] = [[0.0; 4]; 4];
+
+        output[0][0] = value.x.x;
+        output[0][1] = value.x.y;
+        output[0][2] = value.x.z;
+        output[0][3] = value.x.w;
+
+        output[1][0] = value.y.x;
+        output[1][1] = value.y.y;
+        output[1][2] = value.y.z;
+        output[1][3] = value.y.w;
+
+        output[2][0] = value.z.x;
+        output[2][1] = value.z.y;
+        output[2][2] = value.z.z;
+        output[2][3] = value.z.w;
+
+        output[3][0] = value.w.x;
+        output[3][1] = value.w.y;
+        output[3][2] = value.w.z;
+        output[3][3] = value.w.w;
+
+        output
+    }
+}
+
 
 pub struct PerspectiveFov<S> {
     pub fovy: S,

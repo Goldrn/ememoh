@@ -39,10 +39,10 @@ impl ApplicationHandler for App<'_> {
                 }
                 WindowEvent::KeyboardInput {
                     device_id,
-                    event,
+                    event: ref event_key,
                     is_synthetic,
                 } => {
-                    if event.physical_key == KeyCode::Space && event.state.is_pressed() {
+                    if event_key.clone().physical_key == KeyCode::Space && event_key.state.clone().is_pressed() {
                         match self.state.as_mut().expect("you are a bitch").pipeline {
                             Pipeline::Brown => {
                                 self.state.as_mut().expect("you are a bitch").pipeline =
@@ -83,7 +83,10 @@ impl ApplicationHandler for App<'_> {
                 _ => (),
             }
         }
+        self.state.as_mut().expect("aaaaa").input(&event);
+        self.state.as_mut().expect("bbbbb").update();
     }
+
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         self.state
             .as_mut()
