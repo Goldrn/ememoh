@@ -90,8 +90,8 @@ impl<'a> State<'a> {
             desired_maximum_frame_latency: 2,
         };
 
-        assert!(config.width != 0);
-        assert!(config.height != 0);
+        assert_ne!(config.width, 0);
+        assert_ne!(config.height, 0);
 
         surface.configure(&device, &config);
 
@@ -141,7 +141,7 @@ impl<'a> State<'a> {
         let camera = Camera {eye: Point3::new(0.0, 1.0, 2.0), target: Point3::new(0.0, 0.0, 0.0), up: Vector3::new(0.0, 1.0, 0.0), aspect: config.width as f32 / config.height as f32, fovy: 45.0, znear: 0.1, zfar: 100.0};
 
         let mut camera_uniform = CameraUniform::new();
-        //camera_uniform.update_view_proj(&camera);
+        camera_uniform.update_view_proj(&camera);
 
         let camera_buffer = device.create_buffer_init(
         &wgpu::util::BufferInitDescriptor {
@@ -174,7 +174,7 @@ impl<'a> State<'a> {
             label: Some("camera_bind_group"),
         });
 
-        let camera_controller = CameraController::new(0.2);
+        let camera_controller = CameraController::new(0.05);
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
@@ -184,7 +184,7 @@ impl<'a> State<'a> {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout, &camera_bind_group_layout],
+                bind_group_layouts: &[&texture_bind_group_layout, &camera_bind_group_layout,],
                 push_constant_ranges: &[],
             });
 

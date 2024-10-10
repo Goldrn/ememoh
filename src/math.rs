@@ -1,6 +1,7 @@
 use std::ops::{Add, Sub};
 use std::arch::x86_64::_mm256_sqrt_ps;
 use std::ops::Mul;
+use wgpu::naga::MathFunction::Radians;
 use crate::vertex::Vertex;
 
 pub struct Point3<S> {
@@ -163,6 +164,9 @@ impl Matrix4<f32> {
     pub const fn new(x1: f32, x2: f32, x3: f32, x4: f32, y1: f32, y2: f32, y3: f32, y4: f32, z1: f32, z2: f32, z3: f32, z4: f32, w1: f32, w2: f32, w3: f32, w4: f32,) -> Matrix4<f32> {
         Matrix4{x: Vector4::new(x1, x2, x3, x4), y: Vector4::new(y1, y2, y3, y4), z: Vector4::new(z1, z2, z3, z4), w: Vector4::new(w1, w2, w3, w4)}
     }
+    pub const fn new_colum(x1: f32, x2: f32, x3: f32, x4: f32, y1: f32, y2: f32, y3: f32, y4: f32, z1: f32, z2: f32, z3: f32, z4: f32, w1: f32, w2: f32, w3: f32, w4: f32,) -> Matrix4<f32> {
+        Matrix4{x: Vector4::new(x1, y1, z1, w1), y: Vector4::new(x2, y2, z2, w2), z: Vector4::new(x3, y3, z3, w3), w: Vector4::new(x4, y4, z4, w4)}
+    }
 
     pub const fn new_from_vectors(x: Vector4<f32>, y: Vector4<f32>, z: Vector4<f32>, w: Vector4<f32>) -> Matrix4<f32>{
         Matrix4{x, y, z, w}
@@ -185,12 +189,19 @@ impl Matrix4<f32> {
             perpenduicular.x.clone(), perp_up.x.clone(), -dir_normal.x.clone(), 0.0,
             perpenduicular.y.clone(), perp_up.y.clone(), -dir_normal.y.clone(), 0.0,
             perpenduicular.z.clone(), perp_up.z.clone(), -dir_normal.z.clone(), 0.0,
-            -eye.dot_with_vector(perpenduicular), -eye.dot_with_vector(perp_up), -eye.dot_with_vector(dir_normal), 1.0,
+            -eye.dot_with_vector(perpenduicular), -eye.dot_with_vector(perp_up), eye.dot_with_vector(dir_normal), 1.0,
         )
     }
 
     pub fn look_at_rh(eye: Point3<f32>, center: Point3<f32>, up: Vector3<f32>) -> Matrix4<f32> {
         Matrix4::look_to_rh(eye.clone(), Vector3::new(center.x - eye.x, center.y - eye.y, center.z - eye.z), up)
+    }
+
+    pub fn clone(&self) -> Matrix4<f32> {
+        Matrix4::new(self.x.x.clone(), self.x.y.clone(), self.x.z.clone(), self.x.w.clone(),
+                     self.y.x.clone(), self.y.y.clone(), self.y.z.clone(), self.y.w.clone(),
+                     self.z.x.clone(), self.z.y.clone(), self.z.z.clone(), self.z.w.clone(),
+                     self.w.x.clone(), self.w.y.clone(), self.w.z.clone(), self.w.w.clone(),)
     }
 }
 impl Mul for Matrix4<f32> {
@@ -295,7 +306,7 @@ impl From<PerspectiveFov<f32>> for Matrix4<f32> {
 
         Matrix4::new(
             c1r1, c1r2, c1r3, c1r4,
-            c2r1, c2r3, c2r4, c2r1,
+            c2r1, c2r2, c2r3, c2r4,
             c3r1, c3r2, c3r3, c3r4,
             c4r1, c4r2, c4r3, c4r4,
         )

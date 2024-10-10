@@ -20,7 +20,10 @@ impl Camera {
         let view = Matrix4::look_at_rh(self.eye.clone(), self.target.clone(), self.up.clone());
         let projection = perspective(self.fovy, self.aspect, self.znear, self.zfar);
 
-       OPENGL_TO_WGPU_MATRIX * projection * view
+       let output = view.clone() * projection.clone();
+        let outpute = view * projection;
+
+        output
     }
 }
 
@@ -38,6 +41,6 @@ impl CameraUniform {
     }
 
     pub fn update_view_proj(&mut self, camera: &Camera) {
-        self.view_proj = camera.build_view_projection_matrix().into();
+        self.view_proj = (OPENGL_TO_WGPU_MATRIX * camera.build_view_projection_matrix()).into();
     }
 }
