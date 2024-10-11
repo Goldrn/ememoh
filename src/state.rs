@@ -1,19 +1,19 @@
+use std::net::Incoming;
 use std::sync::Arc;
-use wgpu::BindingType;
-use wgpu::PolygonMode::Point;
+use wgpu::BufferUsages;
 use wgpu::util::DeviceExt;
 use winit::event::WindowEvent;
 use winit::window::Window;
 use crate::texture;
 use crate::objects;
 use crate::vertex;
-use crate::camera;
 
 use vertex::Vertex;
-use objects::{VERTICES, INDICES};
+use objects::{VERTICES, INDICES, Instance, InstanceRaw};
 use crate::camera::{Camera, CameraUniform};
 use crate::cameracontroller::CameraController;
-use crate::math::{Point3, Vector3};
+use crate::constants::{INSTANCE_DISPLACEMENT, NUM_INSTANCES_PER_ROW};
+use crate::math::{Point3, Quaternion, Vector3};
 
 pub enum Pipeline {
     Brown,
@@ -25,8 +25,7 @@ pub struct State<'a> {
     pub queue: wgpu::Queue,
     pub config: wgpu::SurfaceConfiguration,
     pub size: winit::dpi::PhysicalSize<u32>,
-    pub pipeline: Pipeline,
-    pub pupil: (wgpu::RenderPipeline, wgpu::RenderPipeline),
+    pub pipeline: wgpu::RenderPipeline,
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
     pub num_indices: u32,
@@ -38,6 +37,8 @@ pub struct State<'a> {
     pub camera_buffer: wgpu::Buffer,
     pub camera_bind_group: wgpu::BindGroup,
     pub camera_controller: CameraController,
+    pub instances: Vec<Instance>,
+    pub instance_buffer: wgpu::Buffer,
 }
 impl<'a> State<'a> {
     pub async fn new(window: Arc<Window>) -> State<'a> {
@@ -176,6 +177,29 @@ impl<'a> State<'a> {
 
         let camera_controller = CameraController::new(0.05);
 
+        let instances = (0..NUM_INSTANCES_PER_ROW).flat_map(|z| {
+            (0..NUM_INSTANCES_PER_ROW).map(move |x| {
+                let position = Vector3::new(x as f32, 0.0, z as f32) - INSTANCE_DISPLACEMENT;
+
+                let rotation: Quaternion<f32> = if position.x == 0.0 && position.y == 0.0 && position.z == 0.0 {
+                    Quaternion::from_axis_angle(Vector3::new(0.0, 0.0, 1.0), 0.0_f32.to_degrees())
+                } else {
+                    Quaternion::from_axis_angle(position.normalize(), 45.0_f32.to_degrees())
+                };
+
+                Instance { position, rotation}
+            })
+        }).collect::<Vec<_>>();
+
+        let instance_data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
+        let instance_buffer = device.create_buffer_init(
+        &wgpu::util::BufferInitDescriptor {
+            label: Some("Instance Buffer"),
+            contents: bytemuck::cast_slice(&instance_data),
+            usage: wgpu::BufferUsages::VERTEX,
+        }
+        );
+
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
@@ -188,43 +212,43 @@ impl<'a> State<'a> {
                 push_constant_ranges: &[],
             });
 
-        let render_pipeline_brown =
-            device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("Render Pipeline"),
-                layout: Some(&render_pipeline_layout),
-                vertex: wgpu::VertexState {
-                    module: &shader,
-                    entry_point: "vs_main",
-                    buffers: &[Vertex::desc()],
-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: &shader,
-                    entry_point: "fs_main",
-                    targets: &[Some(wgpu::ColorTargetState {
-                        format: config.format,
-                        blend: Some(wgpu::BlendState::REPLACE),
-                        write_mask: wgpu::ColorWrites::ALL,
-                    })],
-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
-                }),
-                primitive: wgpu::PrimitiveState {
-                    topology: wgpu::PrimitiveTopology::TriangleList,
-                    strip_index_format: None,
-                    front_face: wgpu::FrontFace::Ccw,
-                    cull_mode: Some(wgpu::Face::Back),
-                    polygon_mode: wgpu::PolygonMode::Fill,
-                    unclipped_depth: false,
-                    conservative: false,
-                },
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState {
-                    count: 1,
-                    mask: !0,
-                    alpha_to_coverage_enabled: false,
-                },
-                multiview: None,
-            });
+        // let render_pipeline_brown =
+        //     device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        //         label: Some("Render Pipeline"),
+        //         layout: Some(&render_pipeline_layout),
+        //         vertex: wgpu::VertexState {
+        //             module: &shader,
+        //             entry_point: "vs_main",
+        //             buffers: &[Vertex::desc()],
+        //             compilation_options: wgpu::PipelineCompilationOptions::default(),
+        //         },
+        //         fragment: Some(wgpu::FragmentState {
+        //             module: &shader,
+        //             entry_point: "fs_main",
+        //             targets: &[Some(wgpu::ColorTargetState {
+        //                 format: config.format,
+        //                 blend: Some(wgpu::BlendState::REPLACE),
+        //                 write_mask: wgpu::ColorWrites::ALL,
+        //             })],
+        //             compilation_options: wgpu::PipelineCompilationOptions::default(),
+        //         }),
+        //         primitive: wgpu::PrimitiveState {
+        //             topology: wgpu::PrimitiveTopology::TriangleList,
+        //             strip_index_format: None,
+        //             front_face: wgpu::FrontFace::Ccw,
+        //             cull_mode: Some(wgpu::Face::Back),
+        //             polygon_mode: wgpu::PolygonMode::Fill,
+        //             unclipped_depth: false,
+        //             conservative: false,
+        //         },
+        //         depth_stencil: None,
+        //         multisample: wgpu::MultisampleState {
+        //             count: 1,
+        //             mask: !0,
+        //             alpha_to_coverage_enabled: false,
+        //         },
+        //         multiview: None,
+        //     });
 
         let render_pipeline_color =
             device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -233,7 +257,7 @@ impl<'a> State<'a> {
                 vertex: wgpu::VertexState {
                     module: &shader,
                     entry_point: "vs_main",
-                    buffers: &[Vertex::desc()],
+                    buffers: &[Vertex::desc(), InstanceRaw::desc()],
                     compilation_options: wgpu::PipelineCompilationOptions::default(),
                 },
                 fragment: Some(wgpu::FragmentState {
@@ -264,8 +288,7 @@ impl<'a> State<'a> {
                 multiview: None,
             });
 
-        let pupil = (render_pipeline_brown, render_pipeline_color);
-        let pipeline = Pipeline::Color;
+        let pipeline = render_pipeline_color;
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
@@ -289,7 +312,6 @@ impl<'a> State<'a> {
             config,
             size,
             pipeline,
-            pupil,
             vertex_buffer,
             index_buffer,
             num_indices,
@@ -300,6 +322,8 @@ impl<'a> State<'a> {
             camera_buffer,
             camera_bind_group,
             camera_controller,
+            instances,
+            instance_buffer,
         }
     }
 
@@ -362,12 +386,13 @@ impl<'a> State<'a> {
             //     Pipeline::Brown => render_pass.set_pipeline(&self.pupil.0),
             //     Pipeline::Color => render_pass.set_pipeline(&self.pupil.1),
             // }
-            render_pass.set_pipeline(&self.pupil.1);
+            render_pass.set_pipeline(&self.pipeline);
             render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
             render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
+            render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
+            render_pass.set_index_buffer(self.index_buffer.slice(..),wgpu::IndexFormat::Uint16);
+            render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as _);
         }
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();

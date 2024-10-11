@@ -43,16 +43,6 @@ impl ApplicationHandler for App<'_> {
                     is_synthetic,
                 } => {
                     if event_key.clone().physical_key == KeyCode::Space && event_key.state.clone().is_pressed() {
-                        match self.state.as_mut().expect("you are a bitch").pipeline {
-                            Pipeline::Brown => {
-                                self.state.as_mut().expect("you are a bitch").pipeline =
-                                    Pipeline::Color
-                            }
-                            Pipeline::Color => {
-                                self.state.as_mut().expect("you are a bitch").pipeline =
-                                    Pipeline::Brown
-                            }
-                        }
                         self.state
                             .as_mut()
                             .expect("kys or fix the damn state")

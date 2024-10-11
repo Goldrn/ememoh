@@ -1,6 +1,3 @@
-use std::ops::Mul;
-//use wgpu::naga::SubgroupOperation::Mul;
-use winit::keyboard::NativeKey::MacOS;
 use crate::constants::OPENGL_TO_WGPU_MATRIX;
 use crate::math::{perspective, Matrix4, Point3, Vector3};
 

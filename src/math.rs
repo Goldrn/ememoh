@@ -1,8 +1,6 @@
-use std::ops::{Add, Sub};
-use std::arch::x86_64::_mm256_sqrt_ps;
-use std::ops::Mul;
-use wgpu::naga::MathFunction::Radians;
-use crate::vertex::Vertex;
+use std::ops::{Add, Sub, Mul};
+use bytemuck::cast_slice;
+use wgpu::naga::Scalar;
 
 pub struct Point3<S> {
     pub x: S,
@@ -82,7 +80,7 @@ pub struct Vector3<S> {
 }
 
 impl Vector3<f32> {
-    pub fn new(x: f32, y:f32, z: f32) -> Vector3<f32> {
+    pub const fn new(x: f32, y:f32, z: f32) -> Vector3<f32> {
         Vector3{x, y, z}
     }
     pub fn cross(&self, v: Vector3<f32>) -> Vector3<f32> {
@@ -134,6 +132,14 @@ impl Sub<Point3<f32>> for Vector3<f32> {
     type Output = Vector3<f32>;
 
     fn sub(self, rhs: Point3<f32>) -> Self::Output {
+        Vector3::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
+    }
+}
+
+impl Sub<Vector3<f32>> for Vector3<f32> {
+    type Output = Vector3<f32>;
+
+    fn sub(self, rhs: Vector3<f32>) -> Self::Output {
         Vector3::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
     }
 }
@@ -319,4 +325,51 @@ pub fn perspective<S> (fovy: S, aspect: S, near: S, far: S) -> Matrix4<S> where 
         near,
         far,
     }.into()
+}
+
+pub struct Quaternion<S> {
+    pub vector: Vector3<S>,
+    pub scalar: S,
+}
+
+impl Quaternion<f32> {
+    pub fn new(vector: Vector3<f32>, scalar: f32) -> Quaternion<f32>{
+        Quaternion {vector, scalar}
+    }
+
+    pub fn clone(&self) -> Quaternion<f32> {
+        Quaternion::new(self.vector.clone(), self.scalar.clone())
+    }
+
+    pub fn from_axis_angle(axis: Vector3<f32>, angle: f32) -> Quaternion<f32> {
+        let (s,c) = ((angle * 0.5).to_radians().sin(), (angle * 0.5).to_radians().cos());
+        Quaternion::new(axis * s, c)
+    }
+}
+impl From<Quaternion<f32>> for Matrix4<f32>{
+    fn from(quat: Quaternion<f32>) -> Self {
+        let x2 = quat.vector.x + quat.vector.x;
+        let y2 = quat.vector.y + quat.vector.y;
+        let z2 = quat.vector.z + quat.vector.z;
+
+        let xx2 = x2 * quat.vector.x;
+        let xy2 = x2 * quat.vector.y;
+        let xz2 = x2 * quat.vector.z;
+
+        let yy2 = y2 * quat.vector.y;
+        let yz2 = y2 * quat.vector.z;
+        let zz2 = z2 * quat.vector.z;
+
+        let sy2 = y2 * quat.scalar;
+        let sz2 = z2 * quat.scalar;
+        let sx2 = x2 * quat.scalar;
+
+        #[cfg_attr(rustfmt, rustfmt_skip)]
+        Matrix4::new(
+            1.0 - yy2 - zz2, xy2 + sz2, xz2 - sy2, 0.0,
+            xy2 - sz2, 1.0 - xx2 - zz2, yz2 + sx2, 0.0,
+            xz2 + sy2, yz2 - sx2, 1.0 - xx2 - yy2, 0.0,
+            0.0, 0.0, 0.0, 1.0,
+        )
+    }
 }
