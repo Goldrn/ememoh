@@ -342,7 +342,7 @@ impl Quaternion<f32> {
     }
 
     pub fn from_axis_angle(axis: Vector3<f32>, angle: f32) -> Quaternion<f32> {
-        let (s,c) = ((angle * 0.5).to_radians().sin(), (angle * 0.5).to_radians().cos());
+        let (s,c) = (angle * 0.5).to_radians().sin_cos();
         Quaternion::new(axis * s, c)
     }
 }

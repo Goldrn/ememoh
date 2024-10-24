@@ -1,4 +1,3 @@
-use std::net::Incoming;
 use std::sync::Arc;
 use wgpu::BufferUsages;
 use wgpu::util::DeviceExt;
@@ -148,7 +147,7 @@ impl<'a> State<'a> {
         &wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
             contents: bytemuck::cast_slice(&[camera_uniform]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         }
         );
 
@@ -182,9 +181,9 @@ impl<'a> State<'a> {
                 let position = Vector3::new(x as f32, 0.0, z as f32) - INSTANCE_DISPLACEMENT;
 
                 let rotation: Quaternion<f32> = if position.x == 0.0 && position.y == 0.0 && position.z == 0.0 {
-                    Quaternion::from_axis_angle(Vector3::new(0.0, 0.0, 1.0), 0.0_f32.to_degrees())
+                    Quaternion::from_axis_angle(Vector3::new(0.0, 0.0, 1.0), 0.0)
                 } else {
-                    Quaternion::from_axis_angle(position.normalize(), 45.0_f32.to_degrees())
+                    Quaternion::from_axis_angle(position.normalize(), 45.0)
                 };
 
                 Instance { position, rotation}
@@ -196,7 +195,7 @@ impl<'a> State<'a> {
         &wgpu::util::BufferInitDescriptor {
             label: Some("Instance Buffer"),
             contents: bytemuck::cast_slice(&instance_data),
-            usage: wgpu::BufferUsages::VERTEX,
+            usage: BufferUsages::VERTEX,
         }
         );
 
@@ -293,13 +292,13 @@ impl<'a> State<'a> {
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
             contents: bytemuck::cast_slice(VERTICES),
-            usage: wgpu::BufferUsages::VERTEX,
+            usage: BufferUsages::VERTEX,
         });
 
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Index Buffer"),
             contents: bytemuck::cast_slice(INDICES),
-            usage: wgpu::BufferUsages::INDEX,
+            usage: BufferUsages::INDEX,
         });
 
         let num_indices = INDICES.len() as u32;
