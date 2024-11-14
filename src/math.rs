@@ -347,7 +347,7 @@ impl Quaternion<f32> {
     }
 }
 impl From<Quaternion<f32>> for Matrix4<f32>{
-    fn from(quat: Quaternion<f32>) -> Self {
+    fn from(quat: Quaternion<f32>) -> Matrix4<f32> {
         let x2 = quat.vector.x + quat.vector.x;
         let y2 = quat.vector.y + quat.vector.y;
         let z2 = quat.vector.z + quat.vector.z;
