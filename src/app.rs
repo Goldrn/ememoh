@@ -1,10 +1,10 @@
+use crate::state::State;
 use std::sync::Arc;
 use winit::application::ApplicationHandler;
 use winit::event::WindowEvent;
 use winit::event_loop::ActiveEventLoop;
 use winit::keyboard::KeyCode;
 use winit::window::{Window, WindowId};
-use crate::state::{Pipeline, State};
 
 #[derive(Default)]
 pub struct App<'a> {
@@ -28,7 +28,7 @@ impl ApplicationHandler for App<'_> {
     }
     fn window_event(
         &mut self,
-        event_loop: &winit::event_loop::ActiveEventLoop,
+        event_loop: &ActiveEventLoop,
         window_id: WindowId,
         event: WindowEvent,
     ) {
@@ -38,9 +38,9 @@ impl ApplicationHandler for App<'_> {
                     event_loop.exit();
                 }
                 WindowEvent::KeyboardInput {
-                    device_id,
+                    device_id: _device_id,
                     event: ref event_key,
-                    is_synthetic,
+                    is_synthetic: _is_synthetic,
                 } => {
                     if event_key.clone().physical_key == KeyCode::Space && event_key.state.clone().is_pressed() {
                         self.state
@@ -77,7 +77,7 @@ impl ApplicationHandler for App<'_> {
         self.state.as_mut().expect("bbbbb").update();
     }
 
-    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
         self.state
             .as_mut()
             .expect("kys or fix the damn state")

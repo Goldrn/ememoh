@@ -1,6 +1,4 @@
-use std::ops::{Add, Sub, Mul};
-use bytemuck::cast_slice;
-use wgpu::naga::Scalar;
+use std::ops::{Add, Mul, Sub};
 
 pub struct Point3<S> {
     pub x: S,

@@ -1,4 +1,3 @@
-use crate::constants::OPENGL_TO_WGPU_MATRIX;
 use crate::math::{perspective, Matrix4, Point3, Vector3};
 
 pub struct Camera {
@@ -17,8 +16,7 @@ impl Camera {
         let view = Matrix4::look_at_rh(self.eye.clone(), self.target.clone(), self.up.clone());
         let projection = perspective(self.fovy, self.aspect, self.znear, self.zfar);
 
-       let output = view.clone() * projection.clone();
-        let outpute = view * projection;
+        let output = view.clone() * projection.clone();
 
         output
     }
