@@ -8,6 +8,7 @@ mod constants;
 mod cameracontroller;
 mod model;
 mod loader;
+mod lighting;
 
 use crate::app::App;
 

@@ -141,6 +141,18 @@ impl Sub<Vector3<f32>> for Vector3<f32> {
         Vector3::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
     }
 }
+
+impl From<[f32; 3]> for Vector3<f32> {
+    fn from(value: [f32; 3]) -> Self {
+        Vector3::new(value[0], value[1], value[2])
+    }
+}
+
+impl Into<[f32; 3]> for Vector3<f32> {
+    fn into(self) -> [f32; 3] {
+        [self.x, self.y, self.z]
+    }
+}
 pub struct Vector4<S> {
     pub x: S,
     pub y: S,
@@ -155,7 +167,70 @@ impl Vector4<f32> {
     pub fn dot(&self, v: Vector4<f32>) -> f32 {
         (self.x*v.x) + (self.y*v.y) + (self.z*v.z) + (self.w*v.w)
     }
+
+    pub fn clone(&self) -> Vector4<f32>{Vector4::new(self.x, self.y, self.z, self.w)}
 }
+
+pub struct Matrix3<S> {
+    pub x: Vector3<S>,
+    pub y: Vector3<S>,
+    pub z: Vector3<S>,
+}
+
+impl Matrix3<f32> {
+    pub const fn new(x1: f32, x2: f32, x3: f32, y1: f32, y2: f32, y3: f32, z1: f32, z2: f32, z3: f32) -> Matrix3<f32> {
+        Matrix3{x: Vector3::new(x1, x2, x3), y: Vector3::new(y1, y2, y3), z: Vector3::new(z1, z2, z3)}
+    }
+}
+
+impl From<Quaternion<f32>> for Matrix3<f32>{
+    fn from(quat: Quaternion<f32>) -> Matrix3<f32> {
+        let x2 = quat.vector.x + quat.vector.x;
+        let y2 = quat.vector.y + quat.vector.y;
+        let z2 = quat.vector.z + quat.vector.z;
+
+        let xx2 = x2 * quat.vector.x;
+        let xy2 = x2 * quat.vector.y;
+        let xz2 = x2 * quat.vector.z;
+
+        let yy2 = y2 * quat.vector.y;
+        let yz2 = y2 * quat.vector.z;
+        let zz2 = z2 * quat.vector.z;
+
+        let sy2 = y2 * quat.scalar;
+        let sz2 = z2 * quat.scalar;
+        let sx2 = x2 * quat.scalar;
+
+        #[cfg_attr(rustfmt, rustfmt_skip)]
+        Matrix3::new(
+            1.0 - yy2 - zz2, xy2 + sz2, xz2 - sy2,
+            xy2 - sz2, 1.0 - xx2 - zz2, yz2 + sx2,
+            xz2 + sy2, yz2 - sx2, 1.0 - xx2 - yy2,
+        )
+    }
+}
+impl From<Matrix3<f32>> for [[f32; 3]; 3] {
+    fn from(value: Matrix3<f32>) -> [[f32; 3]; 3] {
+        let mut output : [[f32; 3]; 3] = [[0.0; 3]; 3];
+
+        output[0][0] = value.x.x;
+        output[0][1] = value.x.y;
+        output[0][2] = value.x.z;
+
+        output[1][0] = value.y.x;
+        output[1][1] = value.y.y;
+        output[1][2] = value.y.z;
+
+        output[2][0] = value.z.x;
+        output[2][1] = value.z.y;
+        output[2][2] = value.z.z;
+
+
+        output
+    }
+}
+
+
 pub struct Matrix4<S> {
     pub x: Vector4<S>,
     pub y: Vector4<S>,
@@ -220,7 +295,6 @@ impl Mul for Matrix4<f32> {
         )
     }
 }
-
 impl From<[[f32; 4]; 4]> for Matrix4<f32> {
     fn from(value: [[f32; 4]; 4]) -> Matrix4<f32> {
         let mut output = Matrix4::new_identity();
@@ -273,6 +347,15 @@ impl From<Matrix4<f32>> for [[f32; 4]; 4] {
         output[3][3] = value.w.w;
 
         output
+    }
+}
+
+impl Mul<Vector3<f32>> for Matrix4<f32> {
+    type Output = Vector3<f32>;
+
+    fn mul(self, rhs: Vector3<f32>) -> Self::Output {
+        let hack = Vector4::new(rhs.x, rhs.y, rhs.z, 0.0);
+        Vector3::new(self.x.dot(hack.clone()), self.y.dot(hack.clone()), self.z.dot(hack.clone()))
     }
 }
 
