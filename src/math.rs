@@ -1,4 +1,4 @@
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, AddAssign, Mul, Sub};
 
 pub struct Point3<S> {
     pub x: S,
@@ -28,6 +28,13 @@ impl Point3<f32> {
     pub fn normalize(&self) -> Point3<f32>{
         let mag : f32 = f32::sqrt((self.x*self.x) + (self.y*self.y) + (self.z*self.z));
         Point3::new(self.x/mag, self.y/mag, self.z/mag)
+    }
+}
+impl AddAssign<Vector3<f32>> for Point3<f32> {
+    fn add_assign(&mut self, rhs: Vector3<f32>) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self.z += rhs.z;
     }
 }
 

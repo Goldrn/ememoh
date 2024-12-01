@@ -1,9 +1,10 @@
 use crate::state::State;
 use std::sync::Arc;
+use std::time::Instant;
 use winit::application::ApplicationHandler;
-use winit::event::WindowEvent;
+use winit::event::{DeviceEvent, DeviceId, ElementState, KeyEvent, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
-use winit::keyboard::KeyCode;
+use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{Window, WindowId};
 
 #[derive(Default)]
@@ -32,31 +33,21 @@ impl ApplicationHandler for App<'_> {
         window_id: WindowId,
         event: WindowEvent,
     ) {
+        let mut last_render_time = Instant::now();
         if window_id == self.state.as_ref().expect("you are not stated").window.id() {
             match event {
                 WindowEvent::CloseRequested => {
                     event_loop.exit();
                 }
-                WindowEvent::KeyboardInput {
-                    device_id: _device_id,
-                    event: ref event_key,
-                    is_synthetic: _is_synthetic,
-                } => {
-                    if event_key.clone().physical_key == KeyCode::Space && event_key.state.clone().is_pressed() {
-                        self.state
-                            .as_mut()
-                            .expect("kys or fix the damn state")
-                            .window()
-                            .request_redraw();
-                        println!("eat shit and die");
-                    }
-                }
                 WindowEvent::RedrawRequested => {
+                    let now = Instant::now();
+                    let dt = now - last_render_time;
+                    last_render_time = now;
                     let state = self
                         .state
                         .as_mut()
                         .expect("you must state before you do things");
-                    state.update();
+                    state.update(dt);
                     match state.render() {
                         Ok(_) => {}
 
@@ -73,8 +64,25 @@ impl ApplicationHandler for App<'_> {
                 _ => (),
             }
         }
+        let now = Instant::now();
+        let dt = now - last_render_time;
+        last_render_time = now;
+
         self.state.as_mut().expect("aaaaa").input(&event);
-        self.state.as_mut().expect("bbbbb").update();
+        self.state.as_mut().expect("bbbbb").update(dt);
+    }
+    fn device_event(&mut self, event_loop: &ActiveEventLoop, device_id: DeviceId, event: DeviceEvent) {
+        match event {
+            DeviceEvent::Added => {}
+            DeviceEvent::Removed => {}
+            DeviceEvent::MouseMotion {delta, } => if self.state.as_mut().unwrap().mouse_pressed{
+                self.state.as_mut().unwrap().camera_controller.process_mouse(delta.0, delta.1)
+            }
+            DeviceEvent::MouseWheel { .. } => {}
+            DeviceEvent::Motion { .. } => {}
+            DeviceEvent::Button { .. } => {}
+            DeviceEvent::Key(_) => {}
+        }
     }
 
     fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
